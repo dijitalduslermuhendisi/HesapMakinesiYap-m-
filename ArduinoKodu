@@ -1,0 +1,113 @@
+#include<Wire.h>
+#include<LiquidCrystal_I2C.h>
+#include<Keypad.h>
+
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+
+const byte ROWS = 4;
+const byte COLS = 4;
+
+char keys[ROWS][COLS] = {
+  {'1','2','3','A'},
+  {'4','5','6','B'},
+  {'7','8','9','C'},
+  {'*','0','#','D'}
+  };
+
+byte rowPins[ROWS]= {9, 8, 7, 6};
+byte colPins[COLS] = {5, 4, 3, 2};
+
+Keypad keypad = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
+
+  String input = "";
+  float num1 = 0, num2 = 0, result = 0;
+  char operation = 0;
+  bool newCalculation = true;
+  
+void setup() {
+ lcd.init();
+ lcd.backlight();
+ lcd.print("Hesap Makinesi");
+ delay(2000);
+ lcd.clear();
+}
+
+void loop() {
+  char key = keypad.getKey();
+
+  if (key) {
+    if (newCalculation && key != 'D'){
+      lcd.clear();
+      input = "";
+      newCalculation = false;
+      
+      }
+    if (key >='0' && key<= '9'){
+      input += key;
+      } else if (key == 'A' || key == 'B' || key == 'C' || key == '*'){
+         if (operation == 0){
+          num1 = input.toFloat();
+          switch (key){
+            case 'A': operation = '+'; break;
+            case 'B': operation = '-'; break;
+            case 'C': operation = '/'; break;
+            case '*': operation = '*'; break;
+            }
+            input += operation;
+          }
+        } else if (key == '#'){
+          if (operation !=0){
+            int opIndex = input.indexOf(operation);
+            num2 = input.substring(opIndex + 1).toFloat();
+
+            switch (operation) {
+              case '+': result = num1+num2; break;
+              case '-': result = num1 - num2; break;
+              case '*': result = num1*num2; break;
+              case '/': 
+                 if (num2 != 0) result = num1/num2;
+                 else {
+                   lcd.clear();
+                   lcd.print("Hata: Sifira bolme");
+                   delay(2000);
+                   reset();
+                   return;
+                
+                  }
+                  break;
+              }
+
+              lcd.clear();
+              lcd.print(input);
+              lcd.setCursor(0, 1);
+              lcd.print("= ");
+              lcd.print(result);
+
+
+              input = String(result);
+              operation = 0;
+              newCalculation = true;
+            }
+            
+          } else if (key == 'D'){
+            reset();
+            }
+
+            updateDisplay();
+    }
+}
+
+void updateDisplay(){
+  lcd.clear();
+  lcd.print(input);
+  }
+
+void reset(){
+  input = "";
+  num1 = 0;
+  num2 = 0;
+  result = 0;
+  operation = 0;
+  newCalculation = true;
+  updateDisplay();
+  }  
